@@ -2,14 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class User extends Authenticatable
-{   
+{
     use HasFactory;
-    protected $fillable = ['name', 'email', 'password', 'phone'];
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'phone'
+    ];
+
+    protected $hidden = [
+        'password'
+    ];
+
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
 
     public function pesanans()
     {
@@ -19,5 +33,10 @@ class User extends Authenticatable
     public function reports()
     {
         return $this->hasMany(Report::class);
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
     }
 }

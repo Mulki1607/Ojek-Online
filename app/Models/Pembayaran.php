@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pembayaran extends Model
 {
-    protected $fillable = ['pesanan_id', 'admin_id', 'metode', 'jumlah', 'status'];
+    protected $fillable = ['pesanan_id', 'user_id','driver_id', 'metode', 'jumlah', 'status', 'tanggal_bayar'];
 
     public function pesanan()
     {

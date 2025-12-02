@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('drivers', function (Blueprint $table) {
+        Schema::create('ratings', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('status');
+            $table->unsignedBigInteger('order_id');
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('driver_id');
+            $table->tinyInteger('rating'); // 1–5
+            $table->text('komentar')->nullable();
             $table->timestamps();
-            $table->boolean('is_online')->default(0);
-
         });
     }
 
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('drivers');
+        Schema::dropIfExists('ratting');
     }
 };

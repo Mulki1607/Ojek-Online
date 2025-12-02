@@ -20,4 +20,8 @@ class Admin extends Model
     {
         return $this->hasMany(Report::class);
     }
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 }

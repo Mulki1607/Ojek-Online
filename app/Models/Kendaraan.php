@@ -9,13 +9,7 @@ class Kendaraan extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'driver_id',
-        'plat_nomor',
-        'jenis',
-        'merk',
-        'warna',
-    ];
+    protected $fillable = ['driver_id','plat_nomor','tipe','merk','warna','tahun'];
     public function driver()
     {
         return $this->belongsTo(Driver::class);

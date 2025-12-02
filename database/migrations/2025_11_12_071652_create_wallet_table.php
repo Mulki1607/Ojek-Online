@@ -11,15 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('drivers', function (Blueprint $table) {
+        Schema::create('wallet', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('status');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->decimal('balance', 15, 2)->default(0);
+            $table->string('currency', 10)->default('IDR');
             $table->timestamps();
-            $table->boolean('is_online')->default(0);
-
         });
     }
 
@@ -28,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('drivers');
+        Schema::dropIfExists('wallet');
     }
 };
