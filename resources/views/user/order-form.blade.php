@@ -1,64 +1,118 @@
 @extends('layouts.main')
 
 @section('content')
-<div class="max-w-lg mx-auto mt-12 bg-white shadow-lg p-8 rounded">
+<div class="max-w-lg mx-auto mt-14 px-4">
 
-    <h2 class="text-2xl font-bold mb-4 text-center">
-        Buat Pesanan – 
-        @if($type === 'ride') Antar Jemput
-        @elseif($type === 'delivery') Kirim Barang
-        @else Pesan & Belanja
-        @endif
-    </h2>
+    <div class="rounded-2xl
+                bg-gray-900/80 backdrop-blur
+                border border-gray-800 shadow-xl p-8">
 
-    <form action="{{ route('user.order.submit') }}" method="POST">
-        @csrf
+        {{-- HEADER --}}
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-semibold text-white">
+                Buat Pesanan
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                @if($type === 'ride') Antar Jemput
+                @elseif($type === 'delivery') Kirim Barang
+                @else Pesan & Belanja
+                @endif
+            </p>
+        </div>
 
-        <input type="hidden" name="type" value="{{ $type }}">
+        <form action="{{ route('user.order.submit') }}" method="POST" class="space-y-5">
+            @csrf
 
-        {{-- TITIK JEMPUT --}}
-        <label class="font-semibold">Titik Jemput</label>
-        <input type="text" name="pickup" required
-               placeholder="Contoh: Jalan Merdeka No. 12"
-               class="w-full px-3 py-2 border rounded mb-4">
+            {{-- TIPE --}}
+            <input type="hidden" name="type" value="{{ $type }}">
 
-        {{-- TITIK TUJUAN --}}
-        <label class="font-semibold">Tujuan</label>
-        <input type="text" name="destination" required
-               placeholder="Contoh: Mall Lhokseumawe"
-               class="w-full px-3 py-2 border rounded mb-4">
+            {{-- TITIK JEMPUT --}}
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">
+                    Titik Jemput
+                </label>
+                <input type="text"
+                       name="pickup"
+                       required
+                       placeholder="Contoh: Depan Masjid Raya"
+                       class="w-full rounded-lg
+                              bg-gray-800 border border-gray-700
+                              text-white placeholder-gray-500
+                              px-4 py-2.5
+                              focus:outline-none focus:ring-2 focus:ring-green-600">
+            </div>
 
-        {{-- CATATAN OPSIONAL --}}
-        <label class="font-semibold">Catatan (Opsional)</label>
-        <textarea name="note"
-                  placeholder="Contoh: Tolong jemput di depan masjid"
-                  class="w-full px-3 py-2 border rounded mb-4"></textarea>
+            {{-- TUJUAN --}}
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">
+                    Tujuan
+                </label>
+                <input type="text"
+                       name="destination"
+                       id="destinationInput"
+                       required
+                       placeholder="Contoh: Mall Lhokseumawe"
+                       class="w-full rounded-lg
+                              bg-gray-800 border border-gray-700
+                              text-white placeholder-gray-500
+                              px-4 py-2.5
+                              focus:outline-none focus:ring-2 focus:ring-green-600">
+            </div>
 
-        {{-- ESTIMASI HARGA (STATIC LOGIC DI FRONTEND DULU) --}}
-        <label class="font-semibold">Estimasi Harga</label>
-        <input type="text" id="priceEst" 
-               class="w-full px-3 py-2 border rounded mb-4 bg-gray-100" 
-               value="—" readonly>
+            {{-- CATATAN --}}
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">
+                    Catatan (Opsional)
+                </label>
+                <textarea name="note"
+                          rows="3"
+                          placeholder="Contoh: Jemput di gerbang samping"
+                          class="w-full rounded-lg
+                                 bg-gray-800 border border-gray-700
+                                 text-white placeholder-gray-500
+                                 px-4 py-2.5
+                                 focus:outline-none focus:ring-2 focus:ring-green-600"></textarea>
+            </div>
 
-        {{-- SCRIPT HITUNG HARGA SEDERHANA --}}
-        <script>
-            document.querySelector("input[name='destination']").addEventListener('input', function() {
-                // Untuk versi awal, harga random sederhana dulu
-                let price = Math.floor(Math.random() * 15000) + 5000;
-                document.getElementById("priceEst").value = "Rp " + price.toLocaleString();
-            });
-        </script>
+            {{-- ESTIMASI --}}
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">
+                    Estimasi Harga
+                </label>
+                <input type="text"
+                       id="priceEst"
+                       readonly
+                       value="—"
+                       class="w-full rounded-lg
+                              bg-gray-700/50 border border-gray-700
+                              text-gray-300
+                              px-4 py-2.5">
+            </div>
 
-        <button class="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 mb-3">
-            Cari Driver Terdekat
-        </button>
+            {{-- ACTION --}}
+            <button type="submit"
+                    class="w-full mt-2
+                           bg-green-700 hover:bg-green-800
+                           text-white font-medium
+                           py-3 rounded-xl transition">
+                Cari Driver Terdekat
+            </button>
+        </form>
 
-    </form>
-
-    <a href="{{ route('user.home') }}"
-       class="block text-center text-gray-600 hover:text-gray-800 mt-3">
-        Kembali
-    </a>
+        <a href="{{ route('user.home') }}"
+           class="block text-center text-sm text-gray-400 hover:text-white mt-6">
+            ← Kembali
+        </a>
+    </div>
 
 </div>
+
+{{-- ESTIMASI FRONTEND --}}
+<script>
+document.getElementById('destinationInput').addEventListener('input', function () {
+    let price = Math.floor(Math.random() * 15000) + 5000;
+    document.getElementById('priceEst').value =
+        'Rp ' + price.toLocaleString('id-ID');
+});
+</script>
 @endsection

@@ -3,25 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Admin extends Model
-{   
+class Admin extends Authenticatable
+{
     use HasFactory;
-    
-    protected $fillable = ['name', 'email', 'password'];
 
-    public function pembayarans()
-    {
-        return $this->hasMany(Pembayaran::class);
-    }
-
-    public function reports()
-    {
-        return $this->hasMany(Report::class);
-    }
-    protected $hidden = [
+    protected $fillable = [
+        'name',
+        'email',
         'password',
-        'remember_token',
     ];
+    protected $hidden = [
+        'password',];
 }

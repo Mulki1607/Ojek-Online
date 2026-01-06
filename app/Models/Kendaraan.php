@@ -2,14 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Kendaraan extends Model
 {
-    use HasFactory;
+    protected $table = 'kendaraan';
+    protected $primaryKey = 'Plat_Nomor';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
-    protected $fillable = ['driver_id','plat_nomor','tipe','merk','warna','tahun'];
+    protected $fillable = [
+        'Plat_Nomor',
+        'Tipe',
+        'Merk',
+        'Warna',
+        'driver_id',
+    ];
+
     public function driver()
     {
         return $this->belongsTo(Driver::class);

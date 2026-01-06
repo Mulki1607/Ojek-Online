@@ -1,67 +1,121 @@
 @extends('layouts.main')
 
 @section('content')
+<div class="max-w-4xl mx-auto px-4 py-10">
 
-@php
-    // Ambil data pesanan dari session
-    $order = session('order_data');
-@endphp
-
-<div class="max-w-lg mx-auto mt-12 bg-white shadow-lg p-8 rounded">
-
-    <h2 class="text-2xl font-bold mb-4 text-center">Driver Terdekat</h2>
-
-    @if(!$order)
-        <div class="text-center text-gray-600">
-            Data pesanan tidak ditemukan.
-        </div>
-        <a href="{{ route('user.order.select') }}" 
-           class="block text-center mt-4 text-blue-600 hover:underline">
-            Buat Pesanan Baru
-        </a>
-        @endif
-
-    {{-- DATA PESANAN --}}
-    <div class="mb-6">
-        <p class="font-semibold">Titik Jemput:</p>
-        <p class="mb-2">{{ $order['pickup'] }}</p>
-
-        <p class="font-semibold">Tujuan:</p>
-        <p class="mb-2">{{ $order['destination'] }}</p>
-
-        <p class="font-semibold">Catatan:</p>
-        <p class="mb-2">{{ $order['note'] ?? '-' }}</p>
-
-        <p class="font-semibold">Estimasi Harga:</p>
-        <p class="text-lg font-bold text-green-700 mb-4">
-            Rp {{ number_format($order['estimated_price']) }}
+    {{-- HEADER --}}
+    <div class="mb-8">
+        <h2 class="text-2xl md:text-3xl font-bold text-white tracking-tight">
+            Driver Terdekat
+        </h2>
+        <p class="text-sm text-gray-400 mt-1">
+            Pilih driver berdasarkan jarak dan kendaraan
         </p>
     </div>
 
-    <h3 class="text-xl font-semibold mb-3">Pilih Driver</h3>
+    {{-- ACTIONS --}}
+    <div class="flex flex-wrap gap-3 mb-8">
+        <a href="{{ route('user.pickup.map') }}"
+           class="px-4 py-2 rounded-lg text-sm
+                  bg-gray-900 border border-gray-700
+                  text-gray-200 hover:border-emerald-600 hover:text-white
+                  transition">
+            📍 Pilih Lokasi Jemput
+        </a>
 
-    @foreach($drivers as $d)
-        <div class="border p-4 rounded mb-4 shadow-sm bg-gray-50">
+        <button onclick="cariDriver()"
+                class="px-4 py-2 rounded-lg text-sm
+                       bg-emerald-700 hover:bg-emerald-800
+                       text-white transition">
+            📡 Cari via GPS
+        </button>
+    </div>
 
-            <div class="flex justify-between">
-                <div>
-                    <p class="text-lg font-bold">{{ $d->nama }}</p>
-                    <p class="text-gray-600 text-sm">Kendaraan: {{ $d->jenis_kendaraan }}</p>
-                    <p class="text-gray-600 text-sm">Jarak: {{ rand(1,5) }} km</p>
+    {{-- LIST DRIVER --}}
+    @if(isset($drivers) && count($drivers))
+        <div class="space-y-4">
+
+            @foreach($drivers as $d)
+            <div class="bg-gray-900/70 backdrop-blur
+                        border border-gray-800 rounded-2xl
+                        p-5 flex justify-between items-center gap-4
+                        hover:border-emerald-600 transition">
+
+                {{-- INFO DRIVER --}}
+                <div class="space-y-1">
+                    <p class="font-semibold text-lg text-white">
+                        {{ $d->name }}
+                    </p>
+
+                    {{-- KENDARAAN --}}
+                    @if($d->kendaraan)
+                        <div class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="px-2 py-0.5 rounded bg-gray-800 text-xs">
+                                {{ $d->kendaraan->Tipe }}
+                            </span>
+                            <span>
+                                {{ $d->kendaraan->Merk }} • {{ $d->kendaraan->Warna }}
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-gray-500">
+                            Plat: {{ $d->kendaraan->Plat_Nomor }}
+                        </p>
+                    @else
+                        <p class="text-xs text-red-400">
+                            Kendaraan belum diisi
+                        </p>
+                    @endif
+
+                    {{-- JARAK --}}
+                    <p class="text-xs text-gray-500 mt-2">
+                        📏 {{ number_format($d->distance ?? 0, 2) }} km
+                    </p>
                 </div>
-                <form action="{{ route('user.order.submit') }}" method="POST">
-                     @csrf
-                    <input type="hidden" name="driver_id" value="{{ $driver->id }}">
-    
-                    <button class="px-3 py-2 bg-blue-600 text-white rounded">
-                        Pilih Driver
-                    </button>
-                </form>
+
+                {{-- ACTION --}}
+                <a href="{{ route('user.driver.map', $d->id) }}"
+                   class="shrink-0 px-5 py-2 rounded-lg text-sm font-semibold
+                          bg-emerald-700 hover:bg-emerald-800
+                          text-white transition">
+                    Pilih
+                </a>
+
             </div>
+            @endforeach
 
         </div>
-    @endforeach
+    @else
+        <div class="text-sm text-gray-400 bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+            Belum ada driver tersedia.  
+            Pilih lokasi jemput atau aktifkan GPS.
+        </div>
+    @endif
 
 </div>
 
+<script>
+function cariDriver() {
+    if (!navigator.geolocation) {
+        alert("Browser tidak mendukung GPS");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function (position) {
+        fetch("{{ route('user.find.drivers') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            })
+        }).then(() => window.location.reload());
+    }, function () {
+        alert("Izin lokasi ditolak");
+    });
+}
+</script>
 @endsection

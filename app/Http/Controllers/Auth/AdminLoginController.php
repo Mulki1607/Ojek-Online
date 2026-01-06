@@ -8,11 +8,17 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminLoginController extends Controller
 {
+    /**
+     * Tampilkan form login admin
+     */
     public function showLoginForm()
     {
         return view('auth.admin-login');
     }
 
+    /**
+     * Proses login admin
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -21,15 +27,29 @@ class AdminLoginController extends Controller
         ]);
 
         if (Auth::guard('admin')->attempt($credentials)) {
+            // Regenerasi session untuk keamanan
+            $request->session()->regenerate();
+
+            // Redirect ke dashboard admin
             return redirect()->route('admin.dashboard');
         }
 
-        return back()->withErrors(['email' => 'Email atau password salah']);
+        // Jika gagal login
+        return back()->withErrors([
+            'email' => 'Email atau password salah',
+        ])->withInput();
     }
 
-    public function logout()
+    /**
+     * Logout admin
+     */
+    public function logout(Request $request)
     {
         Auth::guard('admin')->logout();
-        return redirect('/admin/login');
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('admin.login');
     }
 }

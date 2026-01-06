@@ -3,101 +3,125 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Pesanan;
-use App\Models\Driver;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\DB;
+use App\Models\Pesanan;
+use App\Models\Wallet;
 
 class UserOrderController extends Controller
 {
-    public function makeOrder(Request $request)
-    {
-        $request->validate([
-            'driver_id' => 'required|exists:drivers,id',
-        ]);
-
-        // pastikan user login
-        $user = Auth::user();
-
-        $driver = Driver::findOrFail($request->driver_id);
-
-        // Buat pesanan
-        $order = Pesanan::create([
-            'user_id'   => $user->id,
-            'driver_id' => $driver->id,
-            'status'    => 'pending',
-        ]);
-
-        return redirect()->route('user.orders')
-                         ->with('success', 'Pesanan berhasil dibuat!');
-    }
+    /* ==============================
+     | FORM ORDER
+     ============================== */
     public function orderForm($type)
     {
-        // Validasi tipe layanan
         $allowed = ['ride', 'delivery', 'shopping'];
 
         if (!in_array($type, $allowed)) {
             abort(404);
         }
 
-        return view('user.order-form', [
-            'type' => $type
-        ]);
+        return view('user.order-form', compact('type'));
     }
+
+    /* ==============================
+     | SUBMIT ORDER (SESSION)
+     ============================== */
     public function submitOrder(Request $request)
-{
-    $request->validate([
-        'type'        => 'required',
-        'pickup'      => 'required',
-        'destination' => 'required',
-        'note'        => 'nullable|string',
-    ]);
-
-    // Sementara belum pakai harga real → dummy harga
-    $price = rand(5000, 20000);
-
-    // Belum simpan ke database karena nanti akan masuk ke fitur "Cari Driver"
-    // Untuk sekarang tampilkan halaman driver terdekat
-
-    return redirect()
-        ->route('user.nearby')
-        ->with('order_data', [
-            'type'        => $request->type,
-            'pickup'      => $request->pickup,
-            'destination' => $request->destination,
-            'note'        => $request->note,
-            'estimated_price' => $price
+    {
+        $request->validate([
+            'type'        => 'required',
+            'pickup'      => 'required|string',
+            'destination' => 'required|string',
+            'note'        => 'nullable|string',
         ]);
-}
-public function chooseDriver(Request $request)
-{
-    $request->validate([
-        'driver_id' => 'required|exists:drivers,id'
-    ]);
 
-    $order = session('order_data');
+        session([
+            'order_data' => [
+                'type'        => $request->type,
+                'pickup'      => $request->pickup,
+                'destination' => $request->destination,
+                'note'        => $request->note,
+                'price'       => rand(5000, 20000),
+            ]
+        ]);
 
-    if (!$order) {
-        return redirect()->route('user.order.select')->with('error', 'Pesanan tidak ditemukan.');
+        return redirect()->route('user.nearby');
     }
 
-    // Simpan ke database
-    $pesanan = Pesanan::create([
-        'user_id'    => auth::id(),
-        'driver_id'  => $request->driver_id,
-        'pickup'     => $order['pickup'],
-        'destination'=> $order['destination'],
-        'note'       => $order['note'] ?? null,
-        'price'      => $order['estimated_price'],
-        'status'     => 'pending'
-    ]);
+    /* ==============================
+     | CREATE FINAL ORDER
+     ============================== */
+    public function create(Request $request)
+    {
+        $request->validate([
+            'driver_id'  => 'required|exists:drivers,id',
+            'pickup_lat' => 'required|numeric',
+            'pickup_lng' => 'required|numeric',
+        ]);
 
-    // Hapus session
-    session()->forget('order_data');
+        $orderData = session('order_data');
 
-    // Redirect user
-    return redirect()->route('user.orders')
-                     ->with('success', 'Pesanan berhasil dibuat!');
-}
+        if (!$orderData) {
+            return redirect()
+                ->route('user.home')
+                ->with('error', 'Data pesanan tidak ditemukan.');
+        }
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
+        // 🔑 AMBIL / BUAT WALLET USER (ANTI NULL)
+        $wallet = Wallet::getOrCreateFor($user);
+
+        if ($wallet->balance < $orderData['price']) {
+            return redirect()
+                ->route('user.wallet')
+                ->with('error', 'Saldo tidak cukup. Silakan top up.');
+        }
+
+        DB::transaction(function () use ($wallet, $orderData, $request, $user) {
+
+            // ===============================
+            // POTONG SALDO USER
+            // ===============================
+            $wallet->debit(
+                $orderData['price'],
+                'order_payment',
+                'Pembayaran pesanan'
+            );
+
+            // ===============================
+            // BUAT PESANAN
+            // ===============================
+            Pesanan::create([
+                'user_id'         => $user->id,
+                'driver_id'       => $request->driver_id,
+                'pickup_location' => $orderData['pickup'],
+                'destination'     => $orderData['destination'],
+                'pickup_lat'      => $request->pickup_lat,
+                'pickup_lng'      => $request->pickup_lng,
+                'pickup_note'     => $orderData['note'] ?? null,
+                'price'           => $orderData['price'],
+                'status'          => 'pending',
+            ]);
+        });
+
+        session()->forget('order_data');
+
+        return redirect()
+            ->route('user.orders')
+            ->with('success', 'Pesanan berhasil dibuat.');
+    }
+
+    /* ==============================
+     | RIWAYAT PESANAN
+     ============================== */
+    public function orderHistory()
+    {
+        $orders = Pesanan::where('user_id', Auth::id())
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('user.orders', compact('orders'));
+    }
 }

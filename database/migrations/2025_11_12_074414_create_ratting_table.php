@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('ratings', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('order_id');
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('driver_id');
-            $table->tinyInteger('rating'); // 1–5
-            $table->text('komentar')->nullable();
-            $table->timestamps();
-        });
+    $table->id();
+    $table->foreignId('pesanan_id')->constrained('pesanans')->cascadeOnDelete();
+    $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+    $table->foreignId('driver_id')->nullable()->constrained('drivers')->nullOnDelete();
+    $table->tinyInteger('rating'); // 1–5
+    $table->text('comment')->nullable();
+    $table->timestamps();
+});
     }
 
     /**

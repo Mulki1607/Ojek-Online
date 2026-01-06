@@ -2,80 +2,40 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pesanan;
 use App\Models\Rating;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class RatingController extends Controller
 {
-    // ============================================
-    // TAMPILKAN SEMUA RATING
-    // ============================================
-    public function index()
+    public function store(Request $request, $pesananId)
     {
-        return response()->json(Rating::all(), 200);
-    }
+        $user = Auth::user();
 
-    // ============================================
-    // TAMBAH RATING
-    // ============================================
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'order_id' => 'required|integer',
-            'user_id' => 'required|integer',
-            'driver_id' => 'required|integer',
-            'rating' => 'required|integer|min:1|max:5',
-            'komentar' => 'nullable|string'
+        $request->validate([
+            'rating'  => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:255',
         ]);
 
-        $rating = Rating::create($validated);
+        $order = Pesanan::where('id', $pesananId)
+            ->where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->firstOrFail();
 
-        return response()->json([
-            'message' => 'Rating berhasil ditambahkan',
-            'data' => $rating
-        ], 201);
-    }
+        // Cegah double rating
+        if ($order->rating) {
+            return back()->with('error', 'Pesanan ini sudah diberi rating.');
+        }
 
-    // ============================================
-    // DETAIL RATING
-    // ============================================
-    public function show($id)
-    {
-        $rating = Rating::findOrFail($id);
-
-        return response()->json($rating, 200);
-    }
-
-    // ============================================
-    // UPDATE RATING
-    // ============================================
-    public function update(Request $request, $id)
-    {
-        $rating = Rating::findOrFail($id);
-
-        $validated = $request->validate([
-            'rating' => 'integer|min:1|max:5',
-            'komentar' => 'nullable|string'
+        Rating::create([
+            'pesanan_id' => $order->id,
+            'user_id'    => $user->id,
+            'driver_id'  => $order->driver_id,
+            'rating'     => $request->rating,
+            'komentar'    => $request->comment,
         ]);
 
-        $rating->update($validated);
-
-        return response()->json([
-            'message' => 'Rating berhasil diperbarui',
-            'data' => $rating
-        ], 200);
-    }
-
-    // ============================================
-    // HAPUS RATING
-    // ============================================
-    public function destroy($id)
-    {
-        $rating = Rating::findOrFail($id);
-        $rating->delete();
-
-        return response()->json([
-            'message' => 'Rating berhasil dihapus'
-        ], 200);
+        return back()->with('success', 'Terima kasih atas penilaian Anda.');
     }
 }

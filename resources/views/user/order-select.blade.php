@@ -1,34 +1,94 @@
 @extends('layouts.main')
 
 @section('content')
-<div class="max-w-md mx-auto mt-12 bg-white shadow-lg p-8 rounded">
+<div class="max-w-md mx-auto mt-16 px-4">
 
-    <h2 class="text-2xl font-bold mb-5 text-center">Buat Pesanan</h2>
+    <div class="rounded-2xl
+                bg-gray-900/80 backdrop-blur
+                border border-gray-800 shadow-xl p-8">
 
-    <p class="text-gray-600 mb-6 text-center">
-        Pilih jenis layanan yang ingin kamu gunakan.
-    </p>
+        {{-- HEADER --}}
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-semibold text-white">
+                Buat Pesanan
+            </h2>
+            <p class="text-sm text-gray-400 mt-2">
+                Pilih layanan yang ingin kamu gunakan
+            </p>
+        </div>
 
-    <div class="grid grid-cols-1 gap-4">
+        {{-- OPTIONS --}}
+        <div class="space-y-4">
 
-        {{-- Antar Jemput Orang --}}
-        <a href="{{ route('user.order.form', ['type' => 'ride']) }}"
-           class="block bg-blue-600 text-white text-center py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">
-            Antar Jemput
-        </a>
+            {{-- RIDE --}}
+            <a href="{{ route('user.order.form', ['type' => 'ride']) }}"
+               class="group flex items-center justify-between
+                      px-5 py-4 rounded-xl
+                      bg-gray-800 border border-gray-700
+                      hover:border-green-600 hover:bg-gray-800/70
+                      transition">
+                <div>
+                    <p class="text-white font-medium text-lg">
+                        Antar Jemput
+                    </p>
+                    <p class="text-xs text-gray-400">
+                        Perjalanan cepat & aman
+                    </p>
+                </div>
+                <span class="text-green-500 text-xl group-hover:translate-x-1 transition">
+                    →
+                </span>
+            </a>
 
-        {{-- Antar Barang --}}
-        <a href="{{ route('user.order.form', ['type' => 'delivery']) }}"
-           class="block bg-green-600 text-white text-center py-4 rounded-lg text-lg font-semibold hover:bg-green-700 transition">
-            Kirim Barang
-        </a>
+            {{-- DELIVERY --}}
+            <a href="{{ route('user.order.form', ['type' => 'delivery']) }}"
+               class="group flex items-center justify-between
+                      px-5 py-4 rounded-xl
+                      bg-gray-800 border border-gray-700
+                      hover:border-green-600 hover:bg-gray-800/70
+                      transition">
+                <div>
+                    <p class="text-white font-medium text-lg">
+                        Kirim Barang
+                    </p>
+                    <p class="text-xs text-gray-400">
+                        Dokumen, paket, atau barang
+                    </p>
+                </div>
+                <span class="text-green-500 text-xl group-hover:translate-x-1 transition">
+                    →
+                </span>
+            </a>
 
-        {{-- Belanja --}}
-        <a href="{{ route('user.order.form', ['type' => 'shopping']) }}"
-           class="block bg-purple-600 text-white text-center py-4 rounded-lg text-lg font-semibold hover:bg-purple-700 transition">
-            Pesan & Belanja
+            {{-- SHOPPING --}}
+            <a href="{{ route('user.order.form', ['type' => 'shopping']) }}"
+               class="group flex items-center justify-between
+                      px-5 py-4 rounded-xl
+                      bg-gray-800 border border-gray-700
+                      hover:border-green-600 hover:bg-gray-800/70
+                      transition">
+                <div>
+                    <p class="text-white font-medium text-lg">
+                        Pesan & Belanja
+                    </p>
+                    <p class="text-xs text-gray-400">
+                        Titip beli ke driver
+                    </p>
+                </div>
+                <span class="text-green-500 text-xl group-hover:translate-x-1 transition">
+                    →
+                </span>
+            </a>
+
+        </div>
+
+        {{-- BACK --}}
+        <a href="{{ route('user.home') }}"
+           class="block text-center text-sm text-gray-400 hover:text-white mt-8">
+            ← Kembali
         </a>
 
     </div>
+
 </div>
 @endsection

@@ -7,21 +7,20 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Driver;
 use App\Models\Pesanan;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
     /**
-     * Tampilkan semua user
+     * =========================
+     * USER CRUD (TETAP)
+     * =========================
      */
     public function index()
     {
-        $users = User::all();
-        return response()->json($users);
+        return response()->json(User::all());
     }
 
-    /**
-     * Tambah user baru
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -29,7 +28,6 @@ class UserController extends Controller
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'no_hp'    => 'required|string|max:20',
-            'status'   => 'nullable|string',
         ]);
 
         $user = User::create([
@@ -37,86 +35,92 @@ class UserController extends Controller
             'email'    => $validated['email'],
             'password' => bcrypt($validated['password']),
             'no_hp'    => $validated['no_hp'],
-            'status'   => $validated['status'] ?? 'aktif',
+            'status'   => 'aktif',
         ]);
 
-        return response()->json([
-            'message' => 'User berhasil ditambahkan',
-            'user'    => $user
-        ], 201);
+        return response()->json($user, 201);
     }
 
-    /**
-     * Tampilkan user berdasarkan ID
-     */
     public function show($id)
     {
-        $user = User::findOrFail($id);
-        return response()->json($user);
+        return response()->json(User::findOrFail($id));
     }
 
-    /**
-     * Update user
-     */
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
-        $validated = $request->validate([
-            'nama'     => 'sometimes|string|max:255',
-            'email'    => 'sometimes|email|unique:users,email,' . $id,
-            'password' => 'sometimes|min:6',
-            'no_hp'    => 'sometimes|string|max:20',
-            'status'   => 'sometimes|string',
-        ]);
-
-        if (isset($validated['password'])) {
-            $validated['password'] = bcrypt($validated['password']);
+        $data = $request->only(['nama', 'email', 'no_hp', 'status']);
+        if ($request->password) {
+            $data['password'] = bcrypt($request->password);
         }
 
-        $user->update($validated);
-
-        return response()->json([
-            'message' => 'User berhasil diupdate',
-            'user'    => $user
-        ]);
+        $user->update($data);
+        return response()->json($user);
     }
 
-    /**
-     * Hapus user
-     */
     public function destroy($id)
     {
-        $user = User::findOrFail($id);
-        $user->delete();
-
-        return response()->json(['message' => 'User berhasil dihapus']);
+        User::findOrFail($id)->delete();
+        return response()->json(['message' => 'User dihapus']);
     }
 
     /**
-     * Fitur: Driver terdekat (online)
+     * =========================
+     * DRIVER TERDEKAT (FIX BUG)
+     * =========================
      */
+
     public function nearbyDrivers()
-{
-    // Ambil driver online
-    $drivers = \App\Models\Driver::where('online', 1)->get();
+    {
+        $drivers = Driver::with('kendaraan') // 🔑 WAJIB agar data kendaraan ikut
+            ->where('online', 1)
+            ->where(function ($q) {
+                $q->whereNull('work_status')
+                ->orWhere('work_status', 'available');
+            })
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->get();
 
-    return view('user.nearby', [
-        'drivers' => $drivers
-    ]);
-}
-
+        return view('user.nearby', compact('drivers'));
+    }
 
     /**
-     * Fitur: Riwayat Pesanan User
+     * =========================
+     * MAP DRIVER
+     * =========================
      */
-    public function orderHistory()
+    public function showDriverMap($id)
     {
-        $orders = Pesanan::where('user_id', Auth::id())
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+        $driver = Driver::where('online', 1)
+            ->where('work_status', 'available') // 🔒 DOUBLE SAFETY
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->findOrFail($id);
 
-        return view('user.orders', compact('orders'));
+        return view('user.driver-map', compact('driver'));
     }
-    
+
+    /**
+     * =========================
+     * GPS USER (HANYA SIMPAN LOKASI)
+     * =========================
+     */
+    public function findDrivers(Request $request)
+    {
+        $request->validate([
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
+        ]);
+
+        session([
+            'user_location' => [
+                'lat' => $request->lat,
+                'lng' => $request->lng,
+            ]
+        ]);
+
+        return response()->json(['status' => 'ok']);
+    }
 }

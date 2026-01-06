@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Driver;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DriverController extends Controller
 {
@@ -85,6 +86,49 @@ public function toggleStatus($id)
     $driver->save();
 
     return back();
+}
+
+public function toggleOnline(Request $request)
+{
+    $driver = Auth::guard('driver')->user();
+
+    $driver->online = !$driver->online;
+
+    if ($driver->online) {
+        $driver->work_status = 'available';
+    } else {
+        $driver->work_status = 'offline';
+    }
+
+    /** @var \App\Models\Driver $driver */
+    $driver->save();
+
+    return back()->with(
+        'success',
+        $driver->online ? 'Status: Online' : 'Status: Offline'
+    );
+}
+
+public function updateLocation(Request $request)
+{
+    $request->validate([
+        'lat' => 'required|numeric',
+        'lng' => 'required|numeric',
+    ]);
+
+    $driver = Auth::guard('driver')->user();
+
+    /** @var \App\Models\Driver $driver */
+    $driver->update([
+        'lat' => $request->lat,
+        'lng' => $request->lng,
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'lat' => $driver->lat,
+        'lng' => $driver->lng,
+    ]);
 }
 
 }

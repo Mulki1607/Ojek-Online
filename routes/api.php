@@ -5,8 +5,6 @@ use Illuminate\Support\Facades\Route;
 // Admin
 use App\Http\Controllers\Admin\AdminDashboardController;
 
-// Auth
-use App\Http\Controllers\AuthController;
 
 // Master Data
 use App\Http\Controllers\UserController;
@@ -15,7 +13,6 @@ use App\Http\Controllers\DriverController;
 use App\Http\Controllers\KendaraanController;
 
 // Pesanan & Pembayaran
-use App\Http\Controllers\PesananController;
 use App\Http\Controllers\PembayaranController;
 
 // Wallet & Finance
@@ -66,7 +63,6 @@ Route::apiResource('kendaraans', KendaraanController::class);
 | PESANAN & PEMBAYARAN
 |--------------------------------------------------------------------------
 */
-Route::apiResource('pesanans', PesananController::class);
 Route::apiResource('pembayarans', PembayaranController::class);
 
 
@@ -84,12 +80,6 @@ Route::get('/wallet-transactions/{id}', [WalletTransactionController::class, 'sh
 Route::get('/wallet-transactions/user/{userId}', [WalletTransactionController::class, 'userTransactions']);
 
 
-/*
-|--------------------------------------------------------------------------
-| AUTH
-|--------------------------------------------------------------------------
-*/
-Route::post('/register', [AuthController::class, 'register']);
 
 
 /*

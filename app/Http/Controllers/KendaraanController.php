@@ -4,81 +4,49 @@ namespace App\Http\Controllers;
 
 use App\Models\Kendaraan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class KendaraanController extends Controller
 {
-    /**
-     * Tampilkan semua kendaraan.
-     */
-    public function index()
+    /* ===============================
+     | DRIVER: CREATE / UPDATE KENDARAAN
+     =============================== */
+    public function storeOrUpdate(Request $request)
     {
-        $kendaraan = Kendaraan::all();
-        return response()->json($kendaraan);
-    }
+        $driver = Auth::guard('driver')->user();
 
-    /**
-     * Tambah kendaraan baru.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'driver_id'     => 'required|exists:drivers,id',
-            'jenis'         => 'required|string|max:50',     // motor / mobil
-            'merek'         => 'required|string|max:100',
-            'plat_nomor'    => 'required|string|max:20|unique:kendaraans,plat_nomor',
-            'warna'         => 'required|string|max:50',
-            'tahun'         => 'nullable|integer',
+        $data = $request->validate([
+            'Plat_Nomor' => 'required|string|max:255',
+            'Tipe'       => 'required|in:Motor,Mobil',
+            'Merk'       => 'required|string|max:255',
+            'Warna'      => 'required|string|max:255',
         ]);
 
-        $kendaraan = Kendaraan::create($validated);
+        $data['driver_id'] = $driver->id;
 
-        return response()->json([
-            'message'   => 'Kendaraan berhasil ditambahkan',
-            'kendaraan' => $kendaraan
-        ], 201);
+        Kendaraan::updateOrCreate(
+            ['driver_id' => $driver->id],
+            $data
+        );
+
+        return back()->with('success', 'Data kendaraan berhasil disimpan');
     }
 
-    /**
-     * Tampilkan kendaraan berdasarkan ID.
-     */
-    public function show($id)
+    /* ===============================
+     | ADMIN: LIHAT DATA KENDARAAN DRIVER
+     =============================== */
+    public function adminIndex()
     {
-        $kendaraan = Kendaraan::findOrFail($id);
-        return response()->json($kendaraan);
+        $kendaraans = Kendaraan::with('driver')->latest()->get();
+        return view('admin.kendaraan.index', compact('kendaraans'));
     }
 
-    /**
-     * Update kendaraan.
-     */
-    public function update(Request $request, $id)
+    /* ===============================
+     | USER: LIHAT KENDARAAN DRIVER
+     =============================== */
+    public function showForUser($driver_id)
     {
-        $kendaraan = Kendaraan::findOrFail($id);
-
-        $validated = $request->validate([
-            'driver_id'     => 'sometimes|exists:drivers,id',
-            'jenis'         => 'sometimes|string|max:50',
-            'merek'         => 'sometimes|string|max:100',
-            'plat_nomor'    => 'sometimes|string|max:20|unique:kendaraans,plat_nomor,' . $id,
-            'warna'         => 'sometimes|string|max:50',
-            'tahun'         => 'sometimes|integer',
-        ]);
-
-        $kendaraan->update($validated);
-
-        return response()->json([
-            'message'   => 'Kendaraan berhasil diperbarui',
-            'kendaraan' => $kendaraan
-        ]);
-    }
-
-    /**
-     * Hapus kendaraan.
-     */
-    public function destroy($id)
-    {
-        $kendaraan = Kendaraan::findOrFail($id);
-        $kendaraan->delete();
-
-        return response()->json(['message' => 'Kendaraan berhasil dihapus']);
+        $kendaraan = Kendaraan::where('driver_id', $driver_id)->first();
+        return view('user.driver-kendaraan', compact('kendaraan'));
     }
 }

@@ -2,56 +2,81 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Wallet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Wallet;
 
 class WalletController extends Controller
 {
-    // ==================================================
-    // TAMPILKAN SEMUA WALLET
-    // ==================================================
-    public function index()
+    /* ================= HELPER ================= */
+    private function wallet($owner): Wallet
     {
-        return response()->json(Wallet::all(), 200);
+        return Wallet::firstOrCreate(
+            [
+                'owner_type' => get_class($owner),
+                'owner_id'   => $owner->id,
+            ],
+            [
+                'balance'  => 0,
+                'currency' => 'IDR',
+            ]
+        );
     }
 
-    // ==================================================
-    // DETAIL WALLET USER
-    // ==================================================
-    public function show($user_id)
+    /* ================= USER WALLET ================= */
+    public function userWallet()
     {
-        $wallet = Wallet::where('user_id', $user_id)->firstOrFail();
+        $wallet = $this->wallet(Auth::user())->load('transactions');
 
-        return response()->json($wallet, 200);
+        return view('user.wallet', compact('wallet'));
     }
 
-    // ==================================================
-    // WALLET TIDAK BOLEH DIBUAT MANUAL
-    // ==================================================
-    public function store(Request $request)
+    public function topup(Request $request)
     {
-        return response()->json([
-            'error' => 'Wallet tidak dapat dibuat secara manual. Wallet dibuat otomatis saat user registrasi.'
-        ], 403);
+        $request->validate([
+            'amount' => 'required|numeric|min:1000',
+        ]);
+
+        $wallet = $this->wallet(Auth::user());
+
+        $wallet->credit(
+            $request->amount,
+            'topup',
+            null,
+            'Top up saldo'
+        );
+
+        return back()->with('success', 'Top up berhasil');
     }
 
-    // ==================================================
-    // UPDATE SALDO TIDAK BOLEH MANUAL
-    // ==================================================
-    public function update(Request $request, $id)
+    /* ================= DRIVER WALLET ================= */
+    public function driverWallet()
     {
-        return response()->json([
-            'error' => 'Saldo tidak bisa diupdate manual. Gunakan Topup/Withdraw.'
-        ], 403);
+        $wallet = $this->wallet(Auth::guard('driver')->user())
+            ->load('transactions');
+
+        return view('driver.wallet', compact('wallet'));
     }
 
-    // ==================================================
-    // WALLET TIDAK BOLEH DIHAPUS
-    // ==================================================
-    public function destroy($id)
+    public function withdraw(Request $request)
     {
-        return response()->json([
-            'error' => 'Wallet tidak boleh dihapus.'
-        ], 403);
+        $request->validate([
+            'amount' => 'required|numeric|min:1000',
+        ]);
+
+        try {
+            $wallet = $this->wallet(Auth::guard('driver')->user());
+
+            $wallet->debit(
+                $request->amount,
+                'withdraw',
+                null,
+                'Penarikan saldo'
+            );
+
+            return back()->with('success', 'Withdraw berhasil');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

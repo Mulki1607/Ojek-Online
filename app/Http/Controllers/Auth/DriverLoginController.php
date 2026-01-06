@@ -1,33 +1,41 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Driver;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class DriverLoginController extends Controller
 {
-    public function showDriverLoginForm()
+    public function show()
     {
         return view('auth.driver-login');
     }
 
-    public function driverLogin(Request $request)
+    public function login(Request $request)
     {
-        $request->validate([
+        $credentials = $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
-        $driver = Driver::where('email', $request->email)->first();
-
-        if (!$driver || !Hash::check($request->password, $driver->password)) {
-            return back()->with('error', 'Email atau password salah.');
+        if (Auth::guard('driver')->attempt($credentials)) {
+            $request->session()->regenerate();
+            return redirect()->route('driver.dashboard');
         }
 
-        session(['driver_id' => $driver->id]);
+        return back()->withErrors([
+            'email' => 'Email atau password salah',
+        ]);
+    }
 
-        return redirect('/driver/dashboard');
+    public function logout(Request $request)
+    {
+        Auth::guard('driver')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('driver.login');
     }
 }

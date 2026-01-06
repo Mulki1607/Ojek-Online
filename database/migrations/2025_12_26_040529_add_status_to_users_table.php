@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up()
 {
-    Schema::table('drivers', function (Blueprint $table) {
-        $table->boolean('online')->default(0)->after('status');
+    Schema::table('users', function (Blueprint $table) {
+        $table->string('status')->default('aktif');
     });
 }
 
 public function down()
 {
-    Schema::table('drivers', function (Blueprint $table) {
-        $table->dropColumn('online');
+    Schema::table('users', function (Blueprint $table) {
+        $table->dropColumn('status');
     });
 }
-
 };

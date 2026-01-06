@@ -1,39 +1,56 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Driver;
+use App\Models\Wallet;
 use Illuminate\Support\Facades\Hash;
 
 class DriverRegisterController extends Controller
 {
-    public function showDriverRegisterForm()
+    /**
+     * Tampilkan form register driver
+     */
+    public function show()
     {
         return view('auth.driver-register');
     }
 
-    public function driverRegister(Request $request)
+    /**
+     * Proses register driver + auto create wallet
+     */
+    public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:drivers,email',
             'phone'    => 'required|string|max:20',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
         ]);
 
-        Driver::create([
-            'name'         => $request->name,
-            'email'        => $request->email,
-            'phone'        => $request->phone,
-            'plate_number' => $request->plate_number,
-            'password'     => Hash::make($request->password),
-            // default
-            'status'   => 'aktif',
-            'online'   => 0,
+        // 1. Create driver
+        $driver = Driver::create([
+            'name'        => $validated['name'],
+            'email'       => $validated['email'],
+            'phone'       => $validated['phone'],
+            'password'    => Hash::make($validated['password']),
+            'status'      => 'aktif',
+            'online'      => 0,
+            'work_status' => 'available',
         ]);
 
-        return redirect()->route('driver.login')
-                         ->with('success', 'Akun driver berhasil dibuat.');
+        // 2. Auto create wallet (DRIVER)
+        Wallet::create([
+            'owner_type' => Driver::class,
+            'owner_id'   => $driver->id,
+            'balance'    => 0,
+            'currency'   => 'IDR',
+        ]);
+
+        return redirect()
+            ->route('driver.login')
+            ->with('success', 'Akun driver berhasil dibuat. Silakan login.');
     }
 }

@@ -1,34 +1,56 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
 {
+    /**
+     * Form login user
+     */
     public function showUserLoginForm()
     {
         return view('auth.user-login');
     }
 
+    /**
+     * Proses login user
+     */
     public function userLogin(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
+        $credentials = $request->validate([
+            'email'    => ['required', 'email'],
+            'password' => ['required'],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // PAKAI GUARD WEB SECARA EKSPLISIT
+        if (Auth::guard('web')->attempt($credentials)) {
+            
+            // WAJIB: regenerate session
+            $request->session()->regenerate();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return back()->with('error', 'Email atau password salah.');
+            // redirect ke home user
+            return redirect()->route('user.home');
         }
 
-        Auth::login($user);
+        return back()->withErrors([
+            'email' => 'Email atau password salah.',
+        ]);
+    }
 
-        return redirect('/user/home'); // landing setelah login
+    /**
+     * Logout user
+     */
+    public function logout(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('landing');
     }
 }
